@@ -24,15 +24,16 @@ h2{font-size:1.7em;font-weight:900}
 .btn.mg:active{background:var(--mg);color:#000}
 .row{display:flex;gap:.8em;flex-wrap:wrap;justify-content:center}
 .tips{font-size:.8em;color:var(--dim);line-height:1.9}
-#shop{justify-content:flex-start;padding:.7em 0;gap:.4em}
+#shop{justify-content:flex-start;padding:.7em env(safe-area-inset-right,0px) .7em env(safe-area-inset-left,0px);gap:.4em}
 .sh{display:flex;width:94%;justify-content:space-between;align-items:center}
-#shopBody{width:94%;flex:1;overflow-y:auto;touch-action:pan-y;padding:.3em 0}
+#shopBody{width:94%;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:.3em 0}
 #shopBody h3{margin:.5em 0 .4em;color:var(--yl);font-size:1em}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5em}
 .card{border:1px solid #19f0ff44;background:#0a1020;border-radius:.4em;padding:.55em;display:flex;flex-direction:column;gap:.3em;text-align:center}
 .card b{font-size:.95em}.card small{color:var(--dim);font-size:.72em;min-height:2.4em}
-.card button{font:700 .8em Vazirmatn;padding:.4em;background:#112;color:var(--yl);border:1px solid var(--yl);border-radius:.3em;cursor:pointer}
-.card button.no{opacity:.4}.card button.ok{color:#5f9;border-color:#5f9}
+.card button{font:700 .8em Vazirmatn;padding:.6em .3em;background:#112;color:var(--yl);border:1px solid var(--yl);border-radius:.3em;cursor:pointer}
+.card button.no{opacity:.55}.card button.ok{color:#5f9;border-color:#5f9}.card button.on{background:#0d2b1c}
+#toast{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);background:#0b1226;border:1px solid #ff4466;color:#ff8899;padding:.4em 1.4em;border-radius:2em;font-weight:700;opacity:0;pointer-events:none;transition:opacity .15s;z-index:5}#toast.on{opacity:1}#toast.ok{border-color:#5f9;color:#5f9}
 #zone,#hb{display:none}
 [data-s=play] #zone,[data-s=play] #hb{display:block}
 #zone{position:absolute;inset:0;touch-action:none}
@@ -80,6 +81,7 @@ svg.lucide{width:1.15em;height:1.15em;stroke-width:2.2;vertical-align:-.2em}
   <div class="scr" id="shop">
     <div class="sh"><h2>فروشگاه</h2><b style="color:var(--yl);font-size:1.2em"><i data-lucide="coins"></i> <span id="coins">0</span></b><button class="btn" id="bBack" style="min-width:6em;padding:.3em 1em">بازگشت</button></div>
     <div id="tabs"><button class="on" data-t="w"><i data-lucide="crosshair"></i> اسلحه</button><button data-t="u"><i data-lucide="trending-up"></i> ارتقا</button><button data-t="k"><i data-lucide="palette"></i> ظاهر</button></div><div id="shopBody"></div>
+    <div id="toast"></div>
   </div>
 
   <div class="scr" id="settings"><h2>تنظیمات</h2><div class="opts"><button class="btn opt" id="oSnd"></button><button class="btn opt" id="oVib"></button><button class="btn opt" id="oFs"><i data-lucide="maximize"></i> تمام‌صفحه</button><button class="btn opt mg" id="oReset"></button></div><button class="btn back">بازگشت</button></div>
@@ -141,18 +143,24 @@ if(matchMedia('(pointer:coarse)').matches)document.body.classList.add('touch');
 // ---- صفحه‌ها ----
 function show(s){still=0;state=s;stage.dataset.s=s;J.l.id=J.r.id=null;mouse.d=0;keys={};for(const id of['menu','shop','pause','over','settings','help','bye'])$(id).classList.toggle('on',id==s);
  if(s=='menu')$('stats').innerHTML=ic('trophy')+' '+`رکورد: ${S.best}  ·  ${ic('coins')} ${S.coins}`;if(s=='settings'){rst=0;setUI()}if(s=='shop')renderShop();icons()}
-const card=(n,d,lab,a,i,cls)=>`<div class=card><b>${n}</b><small>${d}</small><button class="${cls}" data-a=${a} data-i=${i}>${lab}</button></div>`;
-let tab='w';const PV=[];
-const PVc=(k,i)=>`<canvas data-pv=${k} data-i=${i} width=120 height=64></canvas>`;
-const card2=(pv,n,d,lab,a,i,cls)=>`<div class=card>${pv}<b>${n}</b><small>${d}</small><button class="${cls}" data-a=${a} data-i=${i}>${lab}</button></div>`;
+let tab='w',PV=[],PVo=null;
+const PVc=(k,i)=>`<canvas data-pv=${k} data-i=${i} width=240 height=128></canvas>`;
 const cs=p=>ic('coins')+' '+p;
-function renderShop(){const sb=$('shopBody'),st=sb.scrollTop;$('coins').textContent=S.coins;let h='<div class=grid>';
- if(tab=='w')WEAPONS.forEach((w,i)=>h+=card2(PVc('w',i),`<span style="color:${w.c}">${w.n}</span>`,`${w.i}<br>آسیب ${w.d}`,S.owned[i]?(S.wep==i?ic('check')+' فعال':'انتخاب'):cs(w.p),'w',i,S.owned[i]?'ok':S.coins<w.p?'no':''));
- if(tab=='u')UPS.forEach((u,i)=>{const l=S.up[i],c=u.c*(l+1);h+=card2(PVc('u',i),u.n,`${u.i}<br>${'●'.repeat(l)+'○'.repeat(5-l)}`,l>=5?'حداکثر':cs(c),'u',i,l>=5?'ok':S.coins<c?'no':'')});
- if(tab=='k')SKINS.forEach((k,i)=>h+=card2(PVc('k',i),`<span style="color:${k.c}">${k.n}</span>`,'رنگ شخصیت',S.skins[i]?(S.skin==i?ic('check')+' فعال':'انتخاب'):cs(k.p),'k',i,S.skins[i]?'ok':S.coins<k.p?'no':''));
- sb.innerHTML=h+'</div>';sb.scrollTop=st;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));icons();
- PV.length=0;sb.querySelectorAll('canvas[data-pv]').forEach(c=>PV.push({c,x:c.getContext('2d'),k:c.dataset.pv,i:+c.dataset.i}))}
-function pvDraw(t){for(const v of PV){const x=v.x,i=v.i,k=v.k;x.save();x.clearRect(0,0,120,64);x.fillStyle='#070b18';x.fillRect(0,0,120,64);x.strokeStyle='#19f0ff18';x.beginPath();for(let a=0;a<120;a+=15){x.moveTo(a,0);x.lineTo(a,64)}x.stroke();
+function shopInfo(t,i){
+ if(t=='w'){const w=WEAPONS[i],own=S.owned[i],cur=S.wep==i;return{lab:own?(cur?ic('check')+' فعال':'انتخاب'):cs(w.p),cls:own?(cur?'ok on':'ok'):S.coins<w.p?'no':'',d:`${w.i}<br>آسیب ${w.d} · ${Math.round(60/w.cd)} در ثانیه`}}
+ if(t=='u'){const u=UPS[i],l=S.up[i],c=u.c*(l+1);return{lab:l>=5?'حداکثر':cs(c),cls:l>=5?'ok':S.coins<c?'no':'',d:`${u.i}<br>${'●'.repeat(l)+'○'.repeat(5-l)}`}}
+ const k=SKINS[i],own=S.skins[i],cur=S.skin==i;return{lab:own?(cur?ic('check')+' فعال':'انتخاب'):cs(k.p),cls:own?(cur?'ok on':'ok'):S.coins<k.p?'no':'',d:'رنگ شخصیت'}}
+const shopList=t=>t=='w'?WEAPONS:t=='u'?UPS:SKINS;
+const shopName=(t,i)=>t=='w'?`<span style="color:${WEAPONS[i].c}">${WEAPONS[i].n}</span>`:t=='u'?UPS[i].n:`<span style="color:${SKINS[i].c}">${SKINS[i].n}</span>`;
+function renderShop(){const sb=$('shopBody');$('coins').textContent=S.coins;let h='<div class=grid>';
+ shopList(tab).forEach((_,i)=>{const f=shopInfo(tab,i);h+=`<div class=card>${PVc(tab,i)}<b>${shopName(tab,i)}</b><small>${f.d}</small><button class="${f.cls}" data-a=${tab} data-i=${i}>${f.lab}</button></div>`});
+ sb.innerHTML=h+'</div>';document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));icons();
+ PV.length=0;if(PVo)PVo.disconnect();
+ PVo=window.IntersectionObserver?new IntersectionObserver(es=>{for(const en of es){const v=PV.find(q=>q.c===en.target);if(v)v.vis=en.isIntersecting}},{root:sb}):null;
+ sb.querySelectorAll('canvas[data-pv]').forEach(c=>{const v={c,x:c.getContext('2d'),k:c.dataset.pv,i:+c.dataset.i,vis:true};PV.push(v);if(PVo)PVo.observe(c)})}
+function refreshShop(){$('coins').textContent=S.coins;document.querySelectorAll('#shopBody .card').forEach(cd=>{const b=cd.querySelector('button'),f=shopInfo(b.dataset.a,+b.dataset.i);b.className=f.cls;b.innerHTML=f.lab;cd.querySelector('small').innerHTML=f.d});icons()}
+let toastT=0;function toast(m,ok){const t=$('toast');t.textContent=m;t.className=ok?'on ok':'on';clearTimeout(toastT);toastT=setTimeout(()=>{t.className=''},1400)}
+function pvDraw(t){for(const v of PV){if(v.vis===false)continue;const x=v.x,i=v.i,k=v.k;x.save();x.setTransform(2,0,0,2,0,0);x.clearRect(0,0,120,64);x.fillStyle='#070b18';x.fillRect(0,0,120,64);x.strokeStyle='#19f0ff18';x.beginPath();for(let a=0;a<120;a+=15){x.moveTo(a,0);x.lineTo(a,64)}x.stroke();
  const col=k=='k'?SKINS[i].c:'#19f0ff';
  const P=(px,py,ang,c)=>{x.save();x.translate(px,py);x.rotate(ang);x.shadowColor=c;x.fillStyle='#cfd8ee';x.fillRect(4,-2,12,4);x.fillStyle='#0a0f1c';x.strokeStyle=c;x.lineWidth=2;x.beginPath();x.arc(0,0,8,0,7);x.fill();x.stroke();x.fillStyle=c;x.beginPath();x.arc(2,0,3,0,7);x.fill();x.restore()};
  const E=(ex,ey,hit)=>{x.save();x.translate(ex,ey);x.shadowColor='#f73';x.fillStyle=hit?'#fff':'#0b0b18';x.strokeStyle='#ff7a33';x.lineWidth=2;x.beginPath();for(let a=0;a<12;a++){const r=a%2?5:11,q=a/12*6.283+t*.02;x[a?'lineTo':'moveTo'](Math.cos(q)*r,Math.sin(q)*r)}x.closePath();x.fill();x.stroke();x.restore()};
@@ -167,18 +175,11 @@ function pvDraw(t){for(const v of PV){const x=v.x,i=v.i,k=v.k;x.save();x.clearRe
   if(i==4){const px=20+q*80;for(let a=0;a<5;a++){x.globalAlpha=.15*a;x.fillStyle=col;x.beginPath();x.arc(px-a*8,32,7,0,7);x.fill()}x.globalAlpha=1;P(px,32,0,col)}}
  else{x.fillStyle=col+'33';x.beginPath();x.arc(60,32,18+3*Math.sin(t*.1),0,7);x.fill();P(60,32,t*.03,col)}
  x.restore()}}
-function renderOld(){let h='<h3>اسلحه‌ها</h3><div class=grid>';
- WEAPONS.forEach((w,i)=>h+=card(`<span style="color:${w.c}">${w.n}</span>`,`${w.i}<br>آسیب ${w.d}`,S.owned[i]?(S.wep==i?'✔ فعال':'انتخاب'):'🪙 '+w.p,'w',i,S.owned[i]?'ok':S.coins<w.p?'no':''));
- h+='</div><h3>ارتقا</h3><div class=grid>';
- UPS.forEach((u,i)=>{const l=S.up[i],c=u.c*(l+1);h+=card(u.n,`${u.i}<br>${'●'.repeat(l)+'○'.repeat(5-l)}`,l>=5?'حداکثر':'🪙 '+c,'u',i,l>=5?'ok':S.coins<c?'no':'')});
- h+='</div><h3>ظاهر</h3><div class=grid>';
- SKINS.forEach((k,i)=>h+=card(`<span style="color:${k.c}">${k.n}</span>`,'رنگ شخصیت',S.skins[i]?(S.skin==i?'✔ فعال':'انتخاب'):'🪙 '+k.p,'k',i,S.skins[i]?'ok':S.coins<k.p?'no':''));
- $('shopBody').innerHTML=h+'</div>';}
-$('shopBody').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a,i=+b.dataset.i;let ok=true;
- if(a=='w'){if(S.owned[i])S.wep=i;else if(S.coins>=WEAPONS[i].p){S.coins-=WEAPONS[i].p;S.owned[i]=1;S.wep=i}else ok=false}
- if(a=='u'){const c=UPS[i].c*(S.up[i]+1);if(S.up[i]<5&&S.coins>=c){S.coins-=c;S.up[i]++}else ok=false}
- if(a=='k'){if(S.skins[i])S.skin=i;else if(S.coins>=SKINS[i].p){S.coins-=SKINS[i].p;S.skins[i]=1;S.skin=i}else ok=false}
- sfx(ok?880:140,.12,ok?'sine':'square');save();renderShop();};
+$('shopBody').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a,i=+b.dataset.i;let ok=true,msg='';
+ if(a=='w'){if(S.owned[i]){S.wep=i;msg='انتخاب شد'}else if(S.coins>=WEAPONS[i].p){S.coins-=WEAPONS[i].p;S.owned[i]=1;S.wep=i;msg='خریداری شد'}else{ok=false;msg='سکه کافی نیست'}}
+ else if(a=='u'){const c=UPS[i].c*(S.up[i]+1);if(S.up[i]>=5){ok=false;msg='به حداکثر رسیده'}else if(S.coins>=c){S.coins-=c;S.up[i]++;msg='ارتقا یافت'}else{ok=false;msg='سکه کافی نیست'}}
+ else if(a=='k'){if(S.skins[i]){S.skin=i;msg='انتخاب شد'}else if(S.coins>=SKINS[i].p){S.coins-=SKINS[i].p;S.skins[i]=1;S.skin=i;msg='خریداری شد'}else{ok=false;msg='سکه کافی نیست'}}
+ sfx(ok?880:140,.12,ok?'sine':'square');toast(msg,ok);save();refreshShop()};
 $('bPlay').onclick=$('bAgain').onclick=start;
 $('bShop').onclick=$('bShop2').onclick=()=>show('shop');
 $('bBack').onclick=$('bMenu').onclick=$('bQuit').onclick=()=>{bank();G=null;show('menu')};
@@ -187,7 +188,7 @@ let rst=0;
 $('bSet').onclick=()=>show('settings');$('bHelp').onclick=()=>show('help');$('bBye').onclick=()=>show('menu');
 $('bExit').onclick=()=>{try{window.Capacitor.Plugins.App.exitApp();return}catch(e){}try{window.close()}catch(e){}show('bye')};
 for(const b of document.querySelectorAll('.back'))b.onclick=()=>{bank();G=null;show('menu')};
-$('tabs').onclick=e=>{const b=e.target.closest('button');if(b){tab=b.dataset.t;$('shopBody').scrollTop=0;renderShop();$('shopBody').scrollTop=0}};
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(b&&b.dataset.t!=tab){tab=b.dataset.t;renderShop();$('shopBody').scrollTop=0}};
 function setUI(){$('oSnd').innerHTML=ic(S.snd?'volume-2':'volume-x')+' صدا: '+(S.snd?'روشن':'خاموش');$('oVib').innerHTML=ic('vibrate')+' لرزش: '+(S.vib?'روشن':'خاموش');$('oReset').innerHTML=ic('trash-2')+(rst?' مطمئنید؟ دوباره بزنید':' پاک‌کردن پیشرفت');$('oFs').style.display=document.documentElement.requestFullscreen?'':'none';icons()}
 $('oSnd').onclick=()=>{S.snd^=1;save();setUI();sfx(700)};
 $('oVib').onclick=()=>{S.vib^=1;save();setUI();if(S.vib&&navigator.vibrate)navigator.vibrate(30)};
