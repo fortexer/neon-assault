@@ -2,5 +2,7 @@
   "appId": "com.neonassault.game",
   "appName": "Neon Assault",
   "webDir": "www",
-  "backgroundColor": "#05060d"
+  "backgroundColor": "#05060d",
+  "loggingBehavior": "none",
+  "android": { "webContentsDebuggingEnabled": false, "allowMixedContent": false }
 }
